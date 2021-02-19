@@ -1,0 +1,51 @@
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachineInstance
+metadata:
+  labels:
+    app: vmi-cirros
+    special: vmi-cirros
+  name: vmi-cirros
+spec:
+  domain:
+    devices:
+      interfaces:
+        - name: default
+          masquerade: {}
+          ports:
+            - port: 80 # required for masquarade to work, can be whatever except istio-used ports
+      disks:
+      - disk:
+          bus: virtio
+        name: containerdisk
+      - disk:
+          bus: virtio
+        name: serviceaccountdisk
+    machine:
+      type: ""
+    resources:
+      requests:
+        memory: 128M
+  networks:
+    - name: default
+      pod: {}
+  terminationGracePeriodSeconds: 0
+  volumes:
+  - name: containerdisk
+    containerDisk:
+      image: kubevirt/cirros-container-disk-demo:devel
+  - name: serviceaccountdisk
+    serviceAccount:
+      serviceAccountName: default
+---
+# Istio requires for applications to have a service
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmi-cirros
+spec:
+  selector:
+    app: vmi-cirros
+  ports:
+    - port: 80
+      protocol: TCP
+
